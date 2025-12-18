@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <title>ลงเวลาออก (Clock-out)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Bootstrap CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+
+  <style>
+    body { background:#f6f7f9; }
+    .touch-lg { min-height:48px; }
+    .navbtn{
+      min-height:40px;
+      padding:.35rem .75rem;
+      border-radius:12px;
+      white-space:nowrap;
+    }
+    .page-wrap{ max-width:480px; }
+  </style>
+</head>
+
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-dark bg-primary">
+    <div class="container-fluid d-flex align-items-center gap-2">
+
+      <!-- 🔙 Back (ให้ clockout.js คุมเอง) -->
+      <a href="#" id="btnBackDash" class="btn btn-outline-light btn-sm navbtn">
+        ← กลับ
+      </a>
+
+      <!-- Center brand -->
+      <div class="flex-grow-1 text-center">
+        <span class="navbar-brand mb-0 fw-semibold">ระบบปฏิบัติงาน รปภ.</span>
+      </div>
+
+      <!-- Logout -->
+      <button class="btn btn-outline-light btn-sm navbtn" onclick="logout()">
+        ออกจากระบบ
+      </button>
+
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="container py-4 page-wrap">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+
+        <h1 class="h5 mb-1 fw-semibold">ลงเวลาออก (Clock-out)</h1>
+        <p class="text-muted small mb-3">
+          ใช้สำหรับบันทึกเวลาออกงานของเวรที่ยังเปิดอยู่
+        </p>
+
+        <!-- ชื่อพนักงาน (id เดิม) -->
+        <p class="mb-2">
+          พนักงาน: <strong><span id="displayName">-</span></strong>
+        </p>
+
+        <!-- สรุปเวร (id เดิม) -->
+        <div
+          id="dutySummary"
+          class="alert alert-secondary py-2 small"
+          style="display:none;"
+        ></div>
+
+        <!-- ข้อความสถานะ / error (id เดิม) -->
+        <div
+          id="clockoutMessage"
+          class="small mt-2 mb-3"
+          style="display:none;"
+        ></div>
+
+        <!-- หมายเหตุ (id เดิม) -->
+        <div class="mb-3">
+          <label for="note" class="form-label fw-semibold">
+            หมายเหตุ <span class="text-muted fw-normal">(ถ้ามี)</span>
+          </label>
+          <textarea
+            id="note"
+            class="form-control"
+            rows="3"
+            placeholder="เช่น เปลี่ยนเวร, ออกก่อนเวลา"
+          ></textarea>
+        </div>
+
+        <!-- รูป (id เดิม) -->
+        <div class="mb-3">
+          <label for="photoInput" class="form-label fw-semibold">
+            แนบรูปตอนออก <span class="text-muted fw-normal">(ไม่บังคับ)</span>
+          </label>
+          <input
+            type="file"
+            id="photoInput"
+            class="form-control touch-lg"
+            accept="image/*"
+          />
+
+          <img
+            id="photoPreview"
+            class="img-fluid rounded border mt-2"
+            style="max-height:220px; display:none;"
+            alt="ตัวอย่างรูปตอนออก"
+          />
+        </div>
+
+        <!-- ปุ่มบันทึก (id เดิม) -->
+        <button id="btnClockOut" class="btn btn-danger w-100 touch-lg fw-semibold">
+          บันทึกเวลาออก
+        </button>
+
+        <div class="text-muted small mt-3 text-center">
+          เมื่อบันทึกสำเร็จ ระบบจะพากลับไปหน้าที่เหมาะสมตามบทบาทโดยอัตโนมัติ
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- App JS -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/clockout.js"></script>
+
+</body>
+</html>
