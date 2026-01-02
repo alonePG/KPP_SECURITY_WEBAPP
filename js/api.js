@@ -1,5 +1,5 @@
 // === CONFIG: ใส่ URL ของ GAS Web App ===
-const API_URL = "https://script.google.com/macros/s/AKfycbyy3xDQkxdC0R6VIQNG5yDehLYKs2qabjzzgxv115pRAh5tkDvQvaUAU9CrymRF_XKs/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbz7-oXKEILmWW13PUMQexsKsln7i_5rYcxnQEZ47hAK0zv1FbgyeO9VANaloMLjtRL2/exec";
 
 // === เรียก API แบบ POST ===
 async function callAPI(action, data = {}) {
@@ -70,4 +70,10 @@ async function apiLeaderGetSiteToday(date, username) {
 // === API: ดึงรายชื่อพนักงานทั้งหมด (USERS) ===
 async function apiGetUsers(username, onlyActive = true) {
   return await callAPI("getUsers", { username, onlyActive });
+}
+
+
+// === API: เช็กเวรค้างล่าสุด (สำหรับ clock-out) ===
+async function apiGetOpenShiftStatus(employeeId) {
+  return await callAPI("getOpenShiftStatus", { employeeId });
 }

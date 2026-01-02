@@ -86,10 +86,10 @@ document.addEventListener("DOMContentLoaded", () => {
     msg.style.display = "block";
 
     try {
-      const res = await apiGetTodayStatus(employeeId);
+      const res = await apiGetOpenShiftStatus(employeeId);
 
       if (!res || res.status !== "success") {
-        msg.textContent = (res && res.message) || "ไม่สามารถตรวจสอบสถานะเวรวันนี้ได้";
+        msg.textContent = (res && res.message) || "ไม่สามารถตรวจสอบสถานะเวรได้";
         msg.classList.remove("text-muted");
         msg.classList.add("text-danger");
         return;
@@ -97,8 +97,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const data = res.data || {};
 
-      if (!data.hasRecord) {
-        msg.textContent = "ไม่พบเวรที่เปิดอยู่ของคุณในวันนี้ (ยังไม่ได้ลงเวลาเข้า)";
+      if (!data.found) {
+        msg.textContent = "ไม่พบเวรที่เปิดอยู่ของคุณ (ไม่มีเวรค้างให้ปิด)";
         msg.classList.remove("text-muted");
         msg.classList.add("text-danger");
         return;
@@ -111,9 +111,24 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+      if (data.canClockOut === false) {
+        if (data.reason === "OPEN_SHIFT_TOO_OLD") {
+          msg.textContent = "เวรค้างนานเกินกำหนด กรุณาให้หัวหน้าอนุมัติ/ปิดเวร";
+        } else if (data.reason === "NIGHT_DEADLINE_PASSED") {
+          msg.textContent = "เกินเวลาปิดเวรผลัด N (ไม่เกิน " + (data.deadline || "09:00") + ") กรุณาให้หัวหน้าอนุมัติ";
+        } else {
+          msg.textContent = "ไม่สามารถปิดเวรได้: " + (data.reason || "UNKNOWN");
+        }
+        msg.classList.remove("text-muted");
+        msg.classList.add("text-danger");
+        return;
+      }
+
+      // ผ่านเงื่อนไข -> แสดงสรุป + เปิดปุ่ม
       if (dutySummary) {
-        let summary = "คุณลงเวลาเข้าไว้แล้ว เวลา " + (data.time_in || "-");
+        let summary = "เวรค้าง: เข้า " + (data.time_in || "-");
         if (data.site) summary += " ที่ไซต์ " + data.site;
+        if (data.shift) summary += " (ผลัด " + data.shift + ")";
         dutySummary.textContent = summary;
         dutySummary.style.display = "block";
       }
@@ -126,9 +141,12 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error(err);
       msg.textContent = "เกิดข้อผิดพลาดในการตรวจสอบเวร: " + err.message;
+      msg.classList.remove("text-muted");
       msg.classList.add("text-danger");
+      msg.style.display = "block";
     }
   }
+
 
   // -----------------------------
   // แสดงรูปตัวอย่าง + เก็บ base64
