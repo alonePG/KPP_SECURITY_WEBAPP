@@ -1,5 +1,5 @@
 // === CONFIG: ใส่ URL ของ GAS Web App ===
-const API_URL = "https://script.google.com/macros/s/AKfycbz7-oXKEILmWW13PUMQexsKsln7i_5rYcxnQEZ47hAK0zv1FbgyeO9VANaloMLjtRL2/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzY9WsRNBIE-9W4f3uFK6NIYBsGuy4JHASO3VInJo2_EKUeAiWr_EcgTGG0F43S01i4/exec";
 
 // === เรียก API แบบ POST ===
 async function callAPI(action, data = {}) {
