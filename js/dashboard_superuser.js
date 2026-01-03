@@ -432,6 +432,7 @@ function renderStatusBadge(status) {
 
 // ==============================
 // Sync เข้าเวร / ออกเวร ของตัวเอง (SUPERUSER/MANAGER ก็ใช้ได้)
+// ใช้ getOpenShiftStatus (หาเวรค้างล่าสุด) เพื่อรองรับผลัด N ข้ามวัน
 // ==============================
 async function syncDutyButtons() {
   const session = getAuthSession();
@@ -457,43 +458,63 @@ async function syncDutyButtons() {
   }
 
   try {
-    const res = await callAPI("getTodayStatus", { employeeId: session.employeeId });
+    const res = await callAPI("getOpenShiftStatus", { employeeId: session.employeeId });
 
     if (!res || res.status !== "success") {
-      setDisabled(btnIn, false); // ยังให้เข้าเวรได้ (เผื่อแค่ status ล้ม)
+      // ถ้าเช็กสถานะไม่ได้ ยังให้ "เข้าเวร" ได้ เผื่อแค่ status ล้ม
+      setDisabled(btnIn, false);
       setDisabled(btnOut, true);
-      if (hint) hint.textContent = "ไม่สามารถตรวจสอบสถานะเวรได้";
+      if (hint) hint.textContent = (res && res.message) ? res.message : "ไม่สามารถตรวจสอบสถานะเวรได้";
       return;
     }
 
     const data = res.data || {};
-    const hasIn = !!data.time_in;
-    const hasOut = !!data.time_out;
 
-    // 1) ยังไม่เข้าเวร → เข้าได้ / ออกไม่ได้
-    if (!hasIn) {
+    // 0) ไม่พบเวรค้าง → เข้าได้ / ออกไม่ได้
+    if (!data.found) {
       setDisabled(btnIn, false);
       setDisabled(btnOut, true);
-      if (hint) hint.textContent = "ยังไม่ได้ลงเวลาเข้า → ยังออกเวรไม่ได้";
+      if (hint) hint.textContent = "ไม่พบเวรที่เปิดอยู่ (ยังไม่มีเวรค้างให้ปิด)";
       return;
     }
 
-    // 2) เข้าแล้ว แต่ยังไม่ออก → เข้าไม่ได้ / ออกได้
-    if (hasIn && !hasOut) {
+    // 1) มีเวรค้างแต่ปิดไปแล้ว (กันแปลก ๆ)
+    if (data.time_out) {
       setDisabled(btnIn, true);
-      setDisabled(btnOut, false);
-      if (hint) hint.textContent = `คุณลงเวลาเข้าแล้ว เวลา ${data.time_in || "-"}`;
+      setDisabled(btnOut, true);
+      if (hint) hint.textContent = "คุณได้ลงเวลาออกเวรนี้เรียบร้อยแล้ว";
       return;
     }
 
-    // 3) ออกแล้ว → เข้าไม่ได้ / ออกไม่ได้ (กันซ้ำ)
+    // 2) มีเวรค้าง แต่ระบบไม่อนุญาตให้ปิด (เกินเวลา/ค้างนาน)
+    if (data.canClockOut === false) {
+      setDisabled(btnIn, true);
+      setDisabled(btnOut, true);
+
+      let msg = "ไม่สามารถปิดเวรได้";
+      if (data.reason === "OPEN_SHIFT_TOO_OLD") {
+        msg = "เวรค้างนานเกินกำหนด กรุณาให้หัวหน้าอนุมัติ/ปิดเวร";
+      } else if (data.reason === "NIGHT_DEADLINE_PASSED") {
+        msg = "เกินเวลาปิดเวรผลัด N (ไม่เกิน " + (data.deadline || "09:00") + ") กรุณาให้หัวหน้าอนุมัติ";
+      } else if (data.reason) {
+        msg = "ไม่สามารถปิดเวรได้: " + data.reason;
+      }
+
+      if (hint) hint.textContent = msg;
+      return;
+    }
+
+    // 3) ✅ มีเวรค้าง และปิดได้ → เข้าไม่ได้ / ออกได้
     setDisabled(btnIn, true);
-    setDisabled(btnOut, true);
-    if (hint) hint.textContent = "วันนี้ลงเวลาออกแล้ว";
+    setDisabled(btnOut, false);
+    if (hint) hint.textContent = `เวรค้าง: เข้าเวลา ${data.time_in || "-"}`;
+
   } catch (err) {
     console.error("syncDutyButtons error:", err);
+    // ถ้าพังจริง ให้เข้าเวรได้ แต่ออกเวรไม่ได้ (ปลอดภัยกว่า)
     setDisabled(btnIn, false);
     setDisabled(btnOut, true);
     if (hint) hint.textContent = "เกิดข้อผิดพลาดในการตรวจสอบสถานะ";
   }
 }
+

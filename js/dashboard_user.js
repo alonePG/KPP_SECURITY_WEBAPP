@@ -24,58 +24,85 @@ document.addEventListener("DOMContentLoaded", () => {
   loadTodayStatus(session.employeeId);
   loadMyLogs(session.employeeId, 7);
 
-  // ------------------------------
-  // โหลดสถานะเวรวันนี้
-  // ------------------------------
-  async function loadTodayStatus(employeeId) {
-    const msgBox = document.getElementById("todayStatusMessage");
-    const btnIn = document.getElementById("btnGotoClockIn");
-    const btnOut = document.getElementById("btnGotoClockOut");
+// ------------------------------
+// โหลดสถานะเวร (ใช้เวรค้างล่าสุด) เพื่อรองรับผลัด N ข้ามวัน
+// ------------------------------
+async function loadTodayStatus(employeeId) {
+  const msgBox = document.getElementById("todayStatusMessage");
+  const btnIn = document.getElementById("btnGotoClockIn");
+  const btnOut = document.getElementById("btnGotoClockOut");
 
-    if (!msgBox || !btnIn || !btnOut) return;
+  if (!msgBox || !btnIn || !btnOut) return;
 
-    msgBox.textContent = "กำลังตรวจสอบสถานะเวรวันนี้...";
+  msgBox.textContent = "กำลังตรวจสอบสถานะเวรของคุณ...";
 
-    try {
-      const res = await apiGetTodayStatus(employeeId);
+  try {
+    // เปลี่ยนจาก apiGetTodayStatus -> apiGetOpenShiftStatus
+    const res = await apiGetOpenShiftStatus(employeeId);
 
-      if (!res || res.status !== "success") {
-        msgBox.innerHTML =
-          '<span class="text-danger">ไม่สามารถตรวจสอบสถานะเวรวันนี้ได้</span>';
-        return;
-      }
-
-      const data = res.data || {};
-
-      if (!data.hasRecord) {
-        // ยังไม่ลงเวลาเข้า → เปิดเฉพาะปุ่มเข้า
-        btnIn.classList.remove("disabled");
-        btnOut.classList.add("disabled");
-        msgBox.innerHTML =
-          '<span class="text-muted">ยังไม่ได้ลงเวลาเข้าในเวรนี้</span>';
-        return;
-      }
-
-      // ลงเวลาเข้าแล้ว
-      btnIn.classList.add("disabled");
-
-      if (data.time_out) {
-        // มีเวลาออกแล้ว → ปิดทั้งคู่
-        btnOut.classList.add("disabled");
-        msgBox.innerHTML =
-          `<span class="text-success">คุณลงเวลาเข้าแล้ว (${data.time_in}) และลงเวลาออกแล้ว (${data.time_out})</span>`;
-      } else {
-        // ยังไม่ลงเวลาออก → เปิดเฉพาะปุ่มออก
-        btnOut.classList.remove("disabled");
-        msgBox.innerHTML =
-          `<span class="text-success">คุณลงเวลาเข้าแล้ว เวลา ${data.time_in}</span>`;
-      }
-    } catch (err) {
-      console.error(err);
+    if (!res || res.status !== "success") {
       msgBox.innerHTML =
-        '<span class="text-danger">เกิดข้อผิดพลาดในการตรวจสอบเวร</span>';
+        '<span class="text-danger">ไม่สามารถตรวจสอบสถานะเวรได้</span>';
+      // เผื่อ status ล้ม ยังให้ "เข้าเวร" ได้
+      btnIn.classList.remove("disabled");
+      btnOut.classList.add("disabled");
+      return;
     }
+
+    const data = res.data || {};
+
+    // 0) ไม่พบเวรค้าง → เข้าได้ / ออกไม่ได้
+    if (!data.found) {
+      btnIn.classList.remove("disabled");
+      btnOut.classList.add("disabled");
+      msgBox.innerHTML =
+        '<span class="text-muted">ไม่พบเวรที่เปิดอยู่ (ยังไม่มีเวรค้างให้ปิด)</span>';
+      return;
+    }
+
+    // 1) มีเวรค้างแต่ปิดไปแล้ว (กันแปลก ๆ)
+    if (data.time_out) {
+      btnIn.classList.add("disabled");
+      btnOut.classList.add("disabled");
+      msgBox.innerHTML =
+        `<span class="text-success">คุณลงเวลาออกเวรนี้เรียบร้อยแล้ว (${data.time_out})</span>`;
+      return;
+    }
+
+    // 2) มีเวรค้าง แต่ระบบไม่อนุญาตให้ปิด (เกินเวลา/ค้างนาน)
+    if (data.canClockOut === false) {
+      btnIn.classList.add("disabled");
+      btnOut.classList.add("disabled");
+
+      let msg = "ไม่สามารถปิดเวรได้";
+      if (data.reason === "OPEN_SHIFT_TOO_OLD") {
+        msg = "เวรค้างนานเกินกำหนด กรุณาให้หัวหน้าอนุมัติ/ปิดเวร";
+      } else if (data.reason === "NIGHT_DEADLINE_PASSED") {
+        msg = "เกินเวลาปิดเวรผลัด N (ไม่เกิน " + (data.deadline || "09:00") + ") กรุณาให้หัวหน้าอนุมัติ";
+      } else if (data.reason) {
+        msg = "ไม่สามารถปิดเวรได้: " + data.reason;
+      }
+
+      msgBox.innerHTML = `<span class="text-danger">${msg}</span>`;
+      return;
+    }
+
+    // 3) ✅ มีเวรค้าง และปิดได้ → เข้าไม่ได้ / ออกได้
+    btnIn.classList.add("disabled");
+    btnOut.classList.remove("disabled");
+    msgBox.innerHTML =
+      `<span class="text-success">เวรค้าง: คุณลงเวลาเข้าแล้ว เวลา ${data.time_in || "-"}</span>`;
+
+  } catch (err) {
+    console.error(err);
+    msgBox.innerHTML =
+      '<span class="text-danger">เกิดข้อผิดพลาดในการตรวจสอบเวร</span>';
+    // ปลอดภัยกว่า: ให้เข้าได้ แต่ออกไม่ได้
+    btnIn.classList.remove("disabled");
+    btnOut.classList.add("disabled");
   }
+}
+
 
   // ------------------------------
   // โหลดประวัติย้อนหลัง
