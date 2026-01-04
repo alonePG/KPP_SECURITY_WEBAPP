@@ -486,23 +486,25 @@ async function syncDutyButtons() {
       return;
     }
 
-    // 2) มีเวรค้าง แต่ระบบไม่อนุญาตให้ปิด (เกินเวลา/ค้างนาน)
+    // 2) มีเวรค้าง แต่ระบบไม่อนุญาตให้ปิด (เกินกำหนดแล้ว)
     if (data.canClockOut === false) {
-      setDisabled(btnIn, true);
+      // ❌ ออกเวรไม่ได้
       setDisabled(btnOut, true);
 
-      let msg = "ไม่สามารถปิดเวรได้";
+      // ✅ เข้าเวรใหม่ได้
+      setDisabled(btnIn, false);
+
+      let msg = "พบเวรค้างเกินกำหนด ระบบบันทึกว่าไม่ลงเวลาออกแล้ว สามารถเข้าเวรใหม่ได้";
       if (data.reason === "OPEN_SHIFT_TOO_OLD") {
-        msg = "เวรค้างนานเกินกำหนด กรุณาให้หัวหน้าอนุมัติ/ปิดเวร";
+        msg = "เวรค้างนานเกินกำหนด ระบบบันทึกว่าไม่ลงเวลาออกแล้ว สามารถเข้าเวรใหม่ได้";
       } else if (data.reason === "NIGHT_DEADLINE_PASSED") {
-        msg = "เกินเวลาปิดเวรผลัด N (ไม่เกิน " + (data.deadline || "09:00") + ") กรุณาให้หัวหน้าอนุมัติ";
-      } else if (data.reason) {
-        msg = "ไม่สามารถปิดเวรได้: " + data.reason;
+        msg = "เกินเวลาปิดเวรผลัด N ระบบบันทึกว่าไม่ลงเวลาออกแล้ว สามารถเข้าเวรใหม่ได้";
       }
 
       if (hint) hint.textContent = msg;
       return;
     }
+
 
     // 3) ✅ มีเวรค้าง และปิดได้ → เข้าไม่ได้ / ออกได้
     setDisabled(btnIn, true);
