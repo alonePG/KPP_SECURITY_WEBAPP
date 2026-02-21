@@ -1,5 +1,5 @@
 // === CONFIG: ใส่ URL ของ GAS Web App ===
-const API_URL = "https://script.google.com/macros/s/AKfycbxIrdlQ8TEEnwv19xS2M3x494ed4rcRIZnprGA4ovXyPQcQuuVPu2Awjw1xnnBKxOu_/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwQA1FcBCbVIr_6YStFiben39YB1TzWBFKm4iy5O6ZWonp1lGe40JhraFpfuiP9DXTT/exec";
 
 // === เรียก API แบบ POST ===
 async function callAPI(action, data = {}) {
@@ -77,4 +77,5 @@ async function apiGetUsers(username, onlyActive = true) {
 async function apiGetOpenShiftStatus(employeeId) {
   return await callAPI("getOpenShiftStatus", { employeeId });
 }
+
 
