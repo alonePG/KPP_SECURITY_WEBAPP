@@ -77,12 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // ✅ เข้าเวรใหม่ได้
         btnIn.classList.remove("disabled");
 
-        msgBox.innerHTML = `
-    <span class="text-warning">
-      พบเวรค้างเกินกำหนด ระบบบันทึกว่าไม่ลงเวลาออกแล้ว
-      <br>สามารถเข้าเวรใหม่ได้
-    </span>
-  `;
+
         return;
       }
 
@@ -156,3 +151,4 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
+
